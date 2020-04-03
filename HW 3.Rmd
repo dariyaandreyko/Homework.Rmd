@@ -1,0 +1,113 @@
+Homework 3 Adidas
+```{r message=FALSE, warning=FALSE, include=FALSE}
+install.packages('rvest')    # install 'rvest' library in R; library and package are synonyms
+install.packages('tidyverse')
+install.packages("progress")
+```
+
+```{r setup, include=FALSE}
+library(rvest)    # a library for web web scraping
+library(tidyverse)
+library(progress)
+```
+```{r}
+url
+```
+```{r}
+url_template <- "https://www.adidas.net.ua/womens.html/page-"
+
+adreses <- str_c(url_template,c(1:5))
+npages <- 5
+
+```
+
+```{r}
+url <- "https://www.adidas.net.ua/womens.html"
+content <- read_html(url)
+content
+```
+```{r}
+content %>%
+  html_nodes("span.title") %>%
+  html_text()
+
+# span.title"> 
+```
+```{r}
+titles <- content %>%
+  html_nodes('span.title') %>%
+  html_text() %>%
+  str_trim()
+titles
+
+dates <- content %>%
+  html_nodes('span.salesprice') %>%
+  html_text() %>%
+  str_trim()
+
+dates
+```
+```{r}
+df <- data.frame(titles = titles, date = dates)
+# синтаксис: data.frame(назва_колонки = назва_вектора_значень, ще_одна_колонка=…)
+
+write.csv(df, "Adidas.csv", row.names = FALSE)    # записали дані в форматі .csv
+# Файл з даними буде у тій же папці, де збережено ноутбук
+```
+
+```{r}
+read.csv("Adidas.csv")
+```
+
+```{r}
+npages <- 5    # скільки сторінок скрейпити
+
+# Вектори, у яких будемо зберігати значення
+dates <- c()
+titles <- c()
+links <- c()
+
+url_template <- "https://www.adidas.net.ua/womens.html/pages-"
+```
+
+```{r}
+for (page in adreses) {
+ 
+  content <- read_html(page)
+  
+  titles <- content %>%
+    html_nodes('span.title') %>%
+    html_text() %>%
+    str_trim() %>%
+    c(titles, .)    # "." крапка означає змінну в пайпі, якщо пона не на першому місці 
+  
+  dates <- content %>%
+    html_nodes('span.salesprice') %>%
+    html_text() %>%
+    str_trim()  %>%
+    c(dates, .)
+  
+  # ще додамо лінки. Тут вибираємо не текст, а атрибут "href" тега "<a>" — лінк  
+  links <- content %>%
+    html_nodes('a.product-link.clearfix') %>%
+    html_attr("href") %>%
+    c(links, .)
+  
+  # Ще один важливий крок: затримка між запитами, щоб не зробити DDoS-атаку на сайт
+  Sys.sleep(3)    # 2 секунди програма буде "спати"  
+}
+```
+
+```{r}
+data.frame(title = titles,
+           date = dates,
+           link = links) %>%
+  write.csv("Adidas.csv",
+            row.names = FALSE) # щоб не зберігати непотрібну колонку номерів рядків
+``` 
+
+```{r}
+df <- read.csv("Adidas.csv")
+df
+```
+Відскрейпили.
